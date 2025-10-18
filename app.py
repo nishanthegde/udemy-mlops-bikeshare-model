@@ -1,25 +1,47 @@
 from flask import Flask, request, jsonify
 from joblib import load
+from google.cloud import storage        # <-- REQUIRED import
 import numpy as np
 import pandas as pd
 import os
 
 app = Flask(__name__)
 
-# --- Load model or fallback to dummy for testing ---
-MODEL_PATH = os.getenv("MODEL_PATH", "model.joblib")
+MODEL_PATH = "model.joblib"
+BUCKET_NAME = "nhegde-mlops"
+BLOB_PATH = "ml-artifacts/model.joblib"
 
-try:
-    model = load(MODEL_PATH)
-    print(f"✅ Loaded model from {MODEL_PATH}")
-except FileNotFoundError:
-    print(f"⚠️ Model not found at {MODEL_PATH}. Using dummy model for testing.")
-    class DummyModel:
-        feature_names_in_ = []
-        def predict(self, X):
-            return np.array([np.log(100.0)])  # log(100) ~ baseline
 
-    model = DummyModel()
+def download_model():
+    """Download model.joblib from GCS if not already local."""
+    try:
+        if not os.path.exists(MODEL_PATH):
+            storage_client = storage.Client()
+            bucket = storage_client.bucket(BUCKET_NAME)
+            blob = bucket.blob(BLOB_PATH)
+            blob.download_to_filename(MODEL_PATH)
+            print(f"✅ Downloaded model from gs://{BUCKET_NAME}/{BLOB_PATH}")
+        return load(MODEL_PATH)
+    except Exception as e:
+        print(f"⚠️ Could not download model from GCS: {e}")
+        return None
+
+
+# Try downloading model from GCS; fall back to dummy if unavailable
+model = download_model()
+
+if model is None:
+    try:
+        model = load(MODEL_PATH)
+        print(f"✅ Loaded model from {MODEL_PATH}")
+    except FileNotFoundError:
+        print(f"⚠️ Model not found at {MODEL_PATH}. Using dummy model for testing.")
+        class DummyModel:
+            feature_names_in_ = []
+            def predict(self, X):
+                return np.array([np.log(100.0)])  # log(100) ~ baseline
+        model = DummyModel()
+
 
 # --- API routes ---
 
@@ -33,12 +55,10 @@ def healthcheck():
 
 def predict():
     try:
-        # Allow parsing even when Content-Type isn't 'application/json'
         input_json = request.get_json(silent=True)
         if not input_json:
             return jsonify({"error": "Missing or invalid JSON payload"}), 400
 
-        # Wrap JSON into DataFrame
         input_df = pd.DataFrame([input_json])
 
         # Enforce feature order & validate input
@@ -50,10 +70,8 @@ def predict():
             if missing:
                 return jsonify({"error": f"Missing features: {missing}"}), 400
 
-            # Drop extra, reorder correctly
             input_df = input_df.reindex(columns=expected)
 
-        # Run prediction and reverse log-transform
         pred = model.predict(input_df)
         pred = float(np.exp(pred[0]))
 

@@ -45,14 +45,14 @@ def train_model(x_train, y_train):
     return pipeline
 
 def save_model_artifact(pipeline):
-    artifact_name = 'model.joblib'
+    artifact_name = "model.joblib"
     dump(pipeline, artifact_name)
     print(f"✅ Model saved locally as {artifact_name}")
-        
-    # Uncomment the below 2 lines while running from cloud 
 
-    # model_artifact = bucket.blob('ml-artifacts/'+artifact_name)
-    # model_artifact.upload_from_filename(artifact_name)
+    # Upload to GCS
+    model_artifact = bucket.blob(f"ml-artifacts/{artifact_name}")
+    model_artifact.upload_from_filename(artifact_name)
+    print("☁️ Uploaded model to gs://nhegde-mlops/ml-artifacts/model.joblib")
 
 def main():
      # Uncomment the below line while running from cloud 

@@ -1,0 +1,43 @@
+steps:
+# 1️⃣ Build Docker image for your Flask model API
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-t', 'gcr.io/udemy-mlops-474821/bikeshare_model',
+    '.'
+  ]
+
+# 2️⃣ Push image to Artifact Registry (GCR-compatible)
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'push',
+    'gcr.io/udemy-mlops-474821/bikeshare_model'
+  ]
+
+# 3️⃣ Run unit tests (pytest) inside the built container
+- name: 'gcr.io/udemy-mlops-474821/bikeshare_model'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      echo "🚀 Running tests inside container..."
+      pytest -v --maxfail=1 --disable-warnings -k "not assignment-solution"
+
+# 4️⃣ Deploy the container to Cloud Run
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: gcloud
+  args:
+    - 'run'
+    - 'deploy'
+    - 'bikeshare-model'
+    - '--image'
+    - 'gcr.io/udemy-mlops-474821/bikeshare_model'
+    - '--region'
+    - 'us-central1'
+    - '--allow-unauthenticated'
+
+images:
+- 'gcr.io/udemy-mlops-474821/bikeshare_model'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

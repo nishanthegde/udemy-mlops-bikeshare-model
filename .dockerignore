@@ -1,0 +1,53 @@
+# Ignore Python cache and venvs
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.pkl
+*.log
+.venv/
+env/
+venv/
+
+# Ignore notebooks and data
+*.ipynb
+data/
+datasets/
+*.csv
+*.tsv
+*.parquet
+*.zip
+*.gz
+*.jsonl
+*.h5
+models/
+checkpoints/
+
+# Ignore local config and credentials
+.env
+*.yaml
+*.yml
+*.toml
+*.ini
+.DS_Store
+Thumbs.db
+
+# Ignore test & development artifacts
+.pytest_cache/
+coverage/
+*.egg-info/
+dist/
+build/
+logs/
+artifacts/
+
+# Ignore large / irrelevant directories
+assignment-solution/
+docs/
+examples/
+notebooks/
+
+# Ignore cloud build cache files
+.cache/
+cloudbuild_logs/

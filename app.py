@@ -24,11 +24,13 @@ except FileNotFoundError:
 # --- API routes ---
 
 @app.route("/")
+
 def healthcheck():
     return jsonify({"status": "ok", "message": "Bikeshare model API running"})
 
 
 @app.route("/predict", methods=["POST"])
+
 def predict():
     try:
         # Allow parsing even when Content-Type isn't 'application/json'
